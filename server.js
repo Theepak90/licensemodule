@@ -43,6 +43,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/torro_lic
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/licenses', licenseRoutes);
+app.use('/api/secure-licenses', require('./routes/secureLicenses'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
