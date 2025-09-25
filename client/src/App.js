@@ -16,7 +16,7 @@ function App() {
     <AuthProvider>
       <LicenseProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen" style={{ backgroundColor: '#f5f6ff' }}>
             <Toaster 
               position="top-right"
               toastOptions={{

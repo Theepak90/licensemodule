@@ -7,6 +7,12 @@ const licenseSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  // Encrypted license key storage
+  encryptedLicenseKey: {
+    encrypted: String,
+    iv: String,
+    authTag: String
+  },
   clientId: {
     type: String,
     required: true,
@@ -94,7 +100,55 @@ const licenseSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  // Military-grade security fields
+  militaryGrade: {
+    type: Boolean,
+    default: false
+  },
+  hardwareBinding: {
+    type: Boolean,
+    default: false
+  },
+  hardwareFingerprint: {
+    type: String
+  },
+  hardwareComponents: {
+    type: Object
+  },
+  integrityChecksums: {
+    type: Object
+  },
+  encryptedData: {
+    type: Object
+  },
+  securityLevel: {
+    type: String,
+    enum: ['basic', 'military'],
+    default: 'basic'
+  },
+  allowedIPs: [{
+    type: String
+  }],
+  allowedCountries: [{
+    type: String
+  }],
+  riskScore: {
+    type: Number,
+    default: 0
+  },
+  securityViolations: [{
+    type: {
+      type: String
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    details: {
+      type: Object
+    }
+  }]
 });
 
 // Index for efficient queries
@@ -119,10 +173,28 @@ licenseSchema.methods.isValid = function() {
   return this.status === 'active' && !this.isExpired;
 };
 
+// Method to get decrypted license key
+licenseSchema.methods.getDecryptedLicenseKey = function() {
+  if (this.encryptedLicenseKey) {
+    const { decryptLicenseKey } = require('../services/licenseService');
+    try {
+      return decryptLicenseKey(
+        this.encryptedLicenseKey.encrypted,
+        this.encryptedLicenseKey.iv,
+        this.encryptedLicenseKey.authTag
+      );
+    } catch (error) {
+      console.error('Error decrypting license key:', error);
+      return this.licenseKey; // Fallback to plain text
+    }
+  }
+  return this.licenseKey; // Fallback to plain text
+};
+
 // Method to get license info for client
 licenseSchema.methods.getClientInfo = function() {
   return {
-    licenseKey: this.licenseKey,
+    licenseKey: this.getDecryptedLicenseKey(),
     clientId: this.clientId,
     productName: this.productName,
     version: this.version,

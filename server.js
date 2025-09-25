@@ -4,36 +4,47 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
-require('dotenv').config();
+const DynamicConfig = require('./utils/dynamicConfig');
+
+// Load dynamic configuration
+const config = new DynamicConfig();
 
 const authRoutes = require('./routes/auth');
 const licenseRoutes = require('./routes/licenses');
+const securityRoutes = require('./routes/security');
 const { checkExpiredLicenses, cleanupExpiredLicenses } = require('./services/licenseExpirationService');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+
+// Get server configuration
+const serverConfig = config.getServerConfig();
+const databaseConfig = config.getDatabaseConfig();
+const networkConfig = config.getNetworkSecurityConfig();
+const cronConfig = config.getCronConfig();
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : 'http://localhost:3000',
-  credentials: true
+  origin: serverConfig.corsOrigin,
+  credentials: serverConfig.corsCredentials,
+  methods: serverConfig.corsMethods,
+  allowedHeaders: serverConfig.corsHeaders
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  windowMs: networkConfig.rateLimitWindowMs,
+  max: networkConfig.rateLimitMaxRequests,
+  message: networkConfig.rateLimitMessage
 });
 app.use('/api/', limiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: serverConfig.jsonLimit }));
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/torro_licenses', {
+mongoose.connect(databaseConfig.uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
@@ -43,19 +54,26 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/torro_lic
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/licenses', licenseRoutes);
+app.use('/api/security', securityRoutes);
 app.use('/api/secure-licenses', require('./routes/secureLicenses'));
+app.use('/api/daemon', require('./routes/daemon'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    status: 'ok', 
+    message: 'Torro License Manager API is running',
+    uptime: process.uptime(),
+    config: {
+      nodeEnv: serverConfig.nodeEnv,
+      port: serverConfig.port,
+      host: serverConfig.host
+    }
   });
 });
 
 // License expiration cron job - runs every minute
-cron.schedule('* * * * *', async () => {
+cron.schedule(cronConfig.licenseCheck, async () => {
   try {
     console.log('🔍 Checking for expired licenses...');
     await checkExpiredLicenses();
@@ -64,8 +82,8 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
-// Cleanup expired licenses - runs daily at 2 AM
-cron.schedule('0 2 * * *', async () => {
+// Cleanup expired licenses - runs daily at configurable time
+cron.schedule(cronConfig.licenseCleanup, async () => {
   try {
     console.log('🧹 Cleaning up expired licenses...');
     await cleanupExpiredLicenses();
@@ -77,23 +95,12 @@ cron.schedule('0 2 * * *', async () => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
+  res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+app.listen(serverConfig.port, serverConfig.host, () => {
+  console.log(`🚀 Torro License Manager running on ${serverConfig.host}:${serverConfig.port}`);
+  console.log(`📊 Dashboard: http://${serverConfig.host}:${serverConfig.port}`);
+  console.log(`🔗 API: http://${serverConfig.host}:${serverConfig.port}/api`);
+  console.log(`🌍 Environment: ${serverConfig.nodeEnv}`);
 });
-
-app.listen(PORT, () => {
-  console.log(`🚀 Torro License Manager running on port ${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`🔗 API: http://localhost:${PORT}/api`);
-});
-
-module.exports = app;
-
-

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import axios from 'axios';
+import api from '../api/config';
 import toast from 'react-hot-toast';
 
 const LicenseContext = createContext();
@@ -20,7 +20,7 @@ export const LicenseProvider = ({ children }) => {
   const fetchLicenses = async (params = {}) => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/licenses', { params });
+      const response = await api.get('/api/licenses', { params });
       setLicenses(response.data.licenses);
       return response.data;
     } catch (error) {
@@ -33,7 +33,7 @@ export const LicenseProvider = ({ children }) => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/licenses/stats/overview');
+      const response = await api.get('/api/licenses/stats/overview');
       setStats(response.data);
       return response.data;
     } catch (error) {
@@ -43,7 +43,7 @@ export const LicenseProvider = ({ children }) => {
 
   const createLicense = async (licenseData) => {
     try {
-      const response = await axios.post('/api/licenses', licenseData);
+      const response = await api.post('/api/licenses', licenseData);
       toast.success('License created successfully!');
       await fetchLicenses(); // Refresh the list
       return response.data.license;
@@ -56,7 +56,7 @@ export const LicenseProvider = ({ children }) => {
 
   const updateLicense = async (id, updates) => {
     try {
-      const response = await axios.put(`/api/licenses/${id}`, updates);
+      const response = await api.put(`/api/licenses/${id}`, updates);
       toast.success('License updated successfully!');
       await fetchLicenses(); // Refresh the list
       return response.data.license;
@@ -69,7 +69,7 @@ export const LicenseProvider = ({ children }) => {
 
   const deleteLicense = async (id) => {
     try {
-      await axios.delete(`/api/licenses/${id}`);
+      await api.delete(`/api/licenses/${id}`);
       toast.success('License deleted successfully!');
       await fetchLicenses(); // Refresh the list
     } catch (error) {
@@ -81,7 +81,7 @@ export const LicenseProvider = ({ children }) => {
 
   const validateLicense = async (licenseKey, clientId) => {
     try {
-      const response = await axios.post('/api/licenses/validate', {
+      const response = await api.post('/api/licenses/validate', {
         licenseKey,
         clientId
       });

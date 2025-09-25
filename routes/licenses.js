@@ -1,7 +1,16 @@
 const express = require('express');
 const License = require('../models/License');
 const { auth, adminOnly } = require('../middleware/auth');
-const { generateLicenseKey, encryptLicenseData } = require('../services/licenseService');
+const { 
+  generateLicenseKey, 
+  encryptLicenseData, 
+  encryptLicenseKey, 
+  decryptLicenseKey,
+  createMilitaryGradeLicense,
+  validateMilitaryGradeLicense,
+  getHardwareFingerprint,
+  calculateRiskScore
+} = require('../services/licenseService');
 
 const router = express.Router();
 
@@ -63,19 +72,28 @@ router.post('/', auth, adminOnly, async (req, res) => {
       maxUsers = 1,
       maxConnections = 10,
       features = {},
-      notes
+      notes,
+      militaryGrade = false,
+      hardwareBinding = false,
+      allowedIPs = [],
+      allowedCountries = []
     } = req.body;
 
     // Generate unique license key and client ID
     const licenseKey = generateLicenseKey();
-    const clientId = `TORRO-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const clientIdPrefix = process.env.CLIENT_ID_PREFIX || 'TORRO';
+    const clientIdSuffix = process.env.CLIENT_ID_SUFFIX_LENGTH || 9;
+    const clientId = `${clientIdPrefix}-${Date.now()}-${Math.random().toString(36).substr(2, clientIdSuffix).toUpperCase()}`;
+
+    // Encrypt license key for secure storage
+    const encryptedKeyData = encryptLicenseKey(licenseKey);
 
     // Calculate expiry date
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-    // Create license
-    const license = new License({
+    // Create base license data
+    const licenseData = {
       licenseKey,
       clientId,
       clientName,
@@ -88,15 +106,32 @@ router.post('/', auth, adminOnly, async (req, res) => {
       maxConnections,
       features: new Map(Object.entries(features)),
       notes,
-      createdBy: req.user.userId
-    });
+      createdBy: req.user.userId,
+      militaryGrade,
+      hardwareBinding,
+      allowedIPs,
+      allowedCountries
+    };
 
+    // Add military-grade security if enabled
+    if (militaryGrade) {
+      const militaryLicense = createMilitaryGradeLicense(licenseData);
+      licenseData.hardwareFingerprint = militaryLicense.hardwareFingerprint;
+      licenseData.hardwareComponents = militaryLicense.hardwareComponents;
+      licenseData.integrityChecksums = militaryLicense.integrityChecksums;
+      licenseData.encryptedData = militaryLicense.encryptedData;
+      licenseData.securityLevel = 'military';
+    }
+
+    // Create license
+    const license = new License(licenseData);
     await license.save();
 
     // Return license info for client
     res.status(201).json({
       message: 'License created successfully',
-      license: license.getClientInfo()
+      license: license.getClientInfo(),
+      militaryGrade: militaryGrade
     });
   } catch (error) {
     console.error('Create license error:', error);
@@ -154,13 +189,42 @@ router.delete('/:id', auth, adminOnly, async (req, res) => {
 // Validate license (public endpoint for client applications)
 router.post('/validate', async (req, res) => {
   try {
-    const { licenseKey, clientId } = req.body;
+    const { 
+      licenseKey, 
+      clientId, 
+      hardwareFingerprint,
+      timestamp,
+      userAgent 
+    } = req.body;
 
     if (!licenseKey || !clientId) {
       return res.status(400).json({ error: 'License key and client ID are required' });
     }
 
-    const license = await License.findOne({ licenseKey, clientId });
+    // First try to find by plain text license key (for backward compatibility)
+    let license = await License.findOne({ licenseKey, clientId });
+    
+    // If not found, search through encrypted keys
+    if (!license) {
+      const licenses = await License.find({ clientId });
+      for (const lic of licenses) {
+        if (lic.encryptedLicenseKey) {
+          try {
+            const decryptedKey = decryptLicenseKey(
+              lic.encryptedLicenseKey.encrypted,
+              lic.encryptedLicenseKey.iv,
+              lic.encryptedLicenseKey.authTag
+            );
+            if (decryptedKey === licenseKey) {
+              license = lic;
+              break;
+            }
+          } catch (error) {
+            console.error('Error decrypting license key:', error);
+          }
+        }
+      }
+    }
     
     if (!license) {
       return res.status(404).json({ 
@@ -173,7 +237,7 @@ router.post('/validate', async (req, res) => {
     license.lastChecked = new Date();
     license.checkCount += 1;
     license.lastAccessIP = req.ip;
-    license.lastAccessUserAgent = req.get('User-Agent');
+    license.lastAccessUserAgent = req.get('User-Agent') || userAgent;
     await license.save();
 
     // Check if license is valid
@@ -188,10 +252,50 @@ router.post('/validate', async (req, res) => {
       });
     }
 
-    res.json({
+    // Military-grade validation if enabled
+    let militaryValidation = null;
+    let riskScore = 0;
+
+    if (license.militaryGrade) {
+      const validationAttempt = {
+        licenseKey,
+        clientId,
+        hardwareFingerprint,
+        ip: req.ip,
+        userAgent: req.get('User-Agent') || userAgent,
+        timestamp: timestamp || Date.now(),
+        requestCount: license.checkCount
+      };
+
+      militaryValidation = validateMilitaryGradeLicense(license, validationAttempt);
+      riskScore = calculateRiskScore(license, validationAttempt);
+
+      if (!militaryValidation.valid) {
+        return res.status(403).json({
+          error: 'Military-grade validation failed',
+          valid: false,
+          reason: militaryValidation.reason || 'Security violation detected',
+          riskScore: militaryValidation.riskScore || riskScore
+        });
+      }
+    }
+
+    // Prepare response
+    const response = {
       valid: true,
-      license: license.getClientInfo()
-    });
+      license: license.getClientInfo(),
+      riskScore: riskScore
+    };
+
+    // Add military-grade data if applicable
+    if (license.militaryGrade && militaryValidation) {
+      response.militaryGrade = true;
+      response.hardwareMatch = militaryValidation.hardwareMatch;
+      response.integrityValid = militaryValidation.integrityValid;
+      response.debuggerDetected = militaryValidation.debuggerDetected;
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Validate license error:', error);
     res.status(500).json({ error: 'License validation failed' });
