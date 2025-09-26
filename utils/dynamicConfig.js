@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 class DynamicConfig {
   constructor() {
@@ -30,12 +31,12 @@ class DynamicConfig {
   }
 
   setDefaults() {
-    // Server Configuration
+    // Server Configuration - NEW PORTS: Backend 3005, Frontend 3004
     this.config.server = {
-      port: parseInt(process.env.PORT) || 3001,
+      port: parseInt(process.env.PORT) || 3005,
       host: process.env.HOST || 'localhost',
       nodeEnv: process.env.NODE_ENV || 'development',
-      corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3002'],
+      corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3004'],
       corsCredentials: process.env.CORS_CREDENTIALS === 'true',
       corsMethods: process.env.CORS_METHODS ? process.env.CORS_METHODS.split(',') : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       corsHeaders: process.env.CORS_HEADERS ? process.env.CORS_HEADERS.split(',') : ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -57,18 +58,18 @@ class DynamicConfig {
 
     // Encryption Configuration
     this.config.encryption = {
-      key: process.env.LICENSE_ENCRYPTION_KEY || 'your-32-character-encryption-key-change-this',
+      key: process.env.LICENSE_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'),
       salt: process.env.LICENSE_SALT || 'military-grade-salt-2024',
       rsaPrivateKey: process.env.RSA_PRIVATE_KEY || null,
       rsaPublicKey: process.env.RSA_PUBLIC_KEY || null
     };
 
-    // Military Security Configuration
+    // Military Security Configuration - FORCE ALL SECURITY FEATURES ON
     this.config.militarySecurity = {
-      enabled: process.env.MILITARY_SECURITY_ENABLED === 'true',
-      hardwareBindingRequired: process.env.HARDWARE_BINDING_REQUIRED === 'true',
-      antiTamperingEnabled: process.env.ANTI_TAMPERING_ENABLED === 'true',
-      selfDestructionEnabled: process.env.SELF_DESTRUCTION_ENABLED === 'true',
+      enabled: process.env.MILITARY_SECURITY_ENABLED !== 'false', // Default to true
+      hardwareBindingRequired: process.env.HARDWARE_BINDING_REQUIRED !== 'false', // Default to true
+      antiTamperingEnabled: process.env.ANTI_TAMPERING_ENABLED !== 'false', // Default to true
+      selfDestructionEnabled: process.env.SELF_DESTRUCTION_ENABLED !== 'false', // Default to true
       securityLevel: process.env.SECURITY_LEVEL || 'military'
     };
 
@@ -96,6 +97,11 @@ class DynamicConfig {
       passwordChangeOnMismatch: process.env.PASSWORD_CHANGE_ON_MISMATCH !== 'false',
       passwordLength: parseInt(process.env.PASSWORD_LENGTH) || 32,
       passwordComplexity: process.env.PASSWORD_COMPLEXITY || 'high',
+      passwordCharsets: {
+        high: process.env.PASSWORD_CHARSET_HIGH || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?',
+        medium: process.env.PASSWORD_CHARSET_MEDIUM || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+        low: process.env.PASSWORD_CHARSET_LOW || 'abcdefghijklmnopqrstuvwxyz0123456789'
+      },
       hashRotationEnabled: process.env.ENABLE_HASH_ROTATION !== 'false',
       hashRotationInterval: parseInt(process.env.HASH_ROTATION_INTERVAL) || 3600000
     };
@@ -306,6 +312,10 @@ class DynamicConfig {
 
   getCronConfig() {
     return this.config.cron;
+  }
+
+  getStorageConfig() {
+    return this.config.storage;
   }
 
   // Validation methods

@@ -1,12 +1,7 @@
 const mongoose = require('mongoose');
 
 const licenseSchema = new mongoose.Schema({
-  licenseKey: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
-  },
+  // licenseKey field removed - now using only encrypted storage
   // Encrypted license key storage
   encryptedLicenseKey: {
     encrypted: String,
@@ -101,14 +96,14 @@ const licenseSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  // Military-grade security fields
+  // Military-grade security fields - FORCE ALL LICENSES TO USE MILITARY SECURITY
   militaryGrade: {
     type: Boolean,
-    default: false
+    default: true
   },
   hardwareBinding: {
     type: Boolean,
-    default: false
+    default: true
   },
   hardwareFingerprint: {
     type: String
@@ -125,7 +120,7 @@ const licenseSchema = new mongoose.Schema({
   securityLevel: {
     type: String,
     enum: ['basic', 'military'],
-    default: 'basic'
+    default: 'military'
   },
   allowedIPs: [{
     type: String
@@ -175,7 +170,10 @@ licenseSchema.methods.isValid = function() {
 
 // Method to get decrypted license key
 licenseSchema.methods.getDecryptedLicenseKey = function() {
-  if (this.encryptedLicenseKey) {
+  if (this.encryptedLicenseKey && 
+      this.encryptedLicenseKey.encrypted && 
+      this.encryptedLicenseKey.iv && 
+      this.encryptedLicenseKey.authTag) {
     const { decryptLicenseKey } = require('../services/licenseService');
     try {
       return decryptLicenseKey(
@@ -185,20 +183,38 @@ licenseSchema.methods.getDecryptedLicenseKey = function() {
       );
     } catch (error) {
       console.error('Error decrypting license key:', error);
-      return this.licenseKey; // Fallback to plain text
+      return 'LICENSE_KEY_DECRYPTION_ERROR';
     }
   }
-  return this.licenseKey; // Fallback to plain text
+  return 'LICENSE_KEY_NOT_AVAILABLE';
+};
+
+// Method to get encrypted license key (3-level encrypted)
+licenseSchema.methods.getEncryptedLicenseKey = function() {
+  if (this.encryptedLicenseKey && 
+      this.encryptedLicenseKey.encrypted && 
+      this.encryptedLicenseKey.iv && 
+      this.encryptedLicenseKey.authTag) {
+    // Return the encrypted string (this is the 3-level encrypted key)
+    return this.encryptedLicenseKey.encrypted;
+  }
+  return 'ENCRYPTED_KEY_NOT_AVAILABLE';
 };
 
 // Method to get license info for client
-licenseSchema.methods.getClientInfo = function() {
+licenseSchema.methods.getClientInfo = function(options = {}) {
+  const { showEncryptedKey = false } = options;
+  
   return {
-    licenseKey: this.getDecryptedLicenseKey(),
+    licenseKey: showEncryptedKey ? this.getEncryptedLicenseKey() : this.getDecryptedLicenseKey(),
     clientId: this.clientId,
+    clientName: this.clientName,
+    clientEmail: this.clientEmail,
     productName: this.productName,
     version: this.version,
     licenseType: this.licenseType,
+    status: this.status,
+    issuedDate: this.issuedDate,
     expiryDate: this.expiryDate,
     maxUsers: this.maxUsers,
     maxConnections: this.maxConnections,
@@ -215,5 +231,6 @@ licenseSchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('License', licenseSchema);
+
 
 

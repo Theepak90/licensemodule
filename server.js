@@ -14,6 +14,9 @@ const licenseRoutes = require('./routes/licenses');
 const securityRoutes = require('./routes/security');
 const { checkExpiredLicenses, cleanupExpiredLicenses } = require('./services/licenseExpirationService');
 
+// FORCE DAEMON SYSTEM TO START WITH ALL LICENSES
+const EnhancedDaemonManager = require('./services/daemons/enhancedDaemonManager');
+
 const app = express();
 
 // Get server configuration
@@ -98,9 +101,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(serverConfig.port, serverConfig.host, () => {
+// START DAEMON SYSTEM FOR ALL LICENSES
+let daemonManager = null;
+
+app.listen(serverConfig.port, serverConfig.host, async () => {
   console.log(`🚀 Torro License Manager running on ${serverConfig.host}:${serverConfig.port}`);
   console.log(`📊 Dashboard: http://${serverConfig.host}:${serverConfig.port}`);
   console.log(`🔗 API: http://${serverConfig.host}:${serverConfig.port}/api`);
   console.log(`🌍 Environment: ${serverConfig.nodeEnv}`);
+  
+  // FORCE START DAEMON SYSTEM
+  try {
+    console.log('🔒 STARTING ENHANCED DAEMON SYSTEM FOR ALL LICENSES...');
+    daemonManager = new EnhancedDaemonManager();
+    await daemonManager.startAllDaemons();
+    console.log('✅ ENHANCED DAEMON SYSTEM STARTED - ALL LICENSES NOW USE MILITARY-GRADE SECURITY + DAEMON');
+  } catch (error) {
+    console.error('❌ Failed to start daemon system:', error.message);
+  }
 });

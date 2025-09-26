@@ -36,7 +36,10 @@ const CreateLicense = () => {
       analytics: false,
       support: false
     },
-    notes: ''
+    notes: '',
+    // FORCE ALL LICENSES TO USE MILITARY-GRADE SECURITY
+    militaryGrade: true,
+    hardwareBinding: true
   });
 
   const handleChange = (e) => {
@@ -120,16 +123,30 @@ const CreateLicense = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">License Key</label>
-                <div className="mt-1 flex items-center space-x-2">
-                  <code className="flex-1 bg-gray-100 p-3 rounded-lg font-mono text-sm">
-                    {createdLicense.licenseKey}
-                  </code>
+                <div className="mt-1 flex items-start space-x-2">
+                  <div className="flex-1 bg-gray-100 p-3 rounded-lg font-mono text-xs overflow-x-auto max-w-full">
+                    <code className="whitespace-nowrap select-all">
+                      {createdLicense.licenseKey}
+                    </code>
+                  </div>
                   <button
                     onClick={() => copyToClipboard(createdLicense.licenseKey)}
-                    className="p-2 text-gray-600 hover:text-gray-900"
+                    className="p-2 text-gray-600 hover:text-gray-900 flex-shrink-0"
+                    title="Copy license key"
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {createdLicense.licenseKey.length} characters • MILITARY-GRADE 3-level encrypted format
+                </p>
+                <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
+                  <p className="text-xs text-red-800 font-semibold">
+                    🔒 MILITARY-GRADE SECURITY ENABLED
+                  </p>
+                  <p className="text-xs text-red-700">
+                    Hardware Binding • Anti-Tampering • Self-Destruction • Daemon System
+                  </p>
                 </div>
               </div>
 

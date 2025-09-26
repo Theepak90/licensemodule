@@ -446,17 +446,23 @@ const LicenseDetails = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   License Key
                 </label>
-                <div className="flex items-center space-x-2">
-                  <code className="flex-1 bg-gray-100 p-3 rounded-lg font-mono text-sm break-all">
-                    {license.licenseKey}
-                  </code>
+                <div className="flex items-start space-x-2">
+                  <div className="flex-1 bg-gray-100 p-3 rounded-lg font-mono text-xs overflow-x-auto max-w-full">
+                    <code className="whitespace-nowrap select-all">
+                      {license.licenseKey}
+                    </code>
+                  </div>
                   <button
                     onClick={() => copyToClipboard(license.licenseKey)}
-                    className="p-2 text-gray-600 hover:text-gray-900"
+                    className="p-2 text-gray-600 hover:text-gray-900 flex-shrink-0"
+                    title="Copy license key"
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {license.licenseKey.length} characters • Encrypted format
+                </p>
               </div>
 
               <div>

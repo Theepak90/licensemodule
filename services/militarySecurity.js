@@ -57,7 +57,9 @@ class MilitarySecurity {
   encryptAES256GCM(data, key = this.encryptionKey) {
     const algorithm = 'aes-256-gcm';
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(algorithm, Buffer.from(key, 'utf8'), iv);
+    // Ensure key is exactly 32 bytes for AES-256
+    const keyBuffer = crypto.createHash('sha256').update(key).digest();
+    const cipher = crypto.createCipheriv(algorithm, keyBuffer, iv);
     cipher.setAAD(Buffer.from('torro-license-data', 'utf8'));
     let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -67,7 +69,9 @@ class MilitarySecurity {
 
   decryptAES256GCM(encrypted, iv, authTag, key = this.encryptionKey) {
     const algorithm = 'aes-256-gcm';
-    const decipher = crypto.createDecipheriv(algorithm, Buffer.from(key, 'utf8'), Buffer.from(iv, 'hex'));
+    // Ensure key is exactly 32 bytes for AES-256
+    const keyBuffer = crypto.createHash('sha256').update(key).digest();
+    const decipher = crypto.createDecipheriv(algorithm, keyBuffer, Buffer.from(iv, 'hex'));
     decipher.setAAD(Buffer.from('torro-license-data', 'utf8'));
     decipher.setAuthTag(Buffer.from(authTag, 'hex'));
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');

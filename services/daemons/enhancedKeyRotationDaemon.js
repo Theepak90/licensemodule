@@ -1,6 +1,7 @@
 const KeyRotationDaemon = require('./keyRotationDaemon');
 const HashValidator = require('../hashValidator');
 const EventEmitter = require('events');
+const fs = require('fs');
 
 class EnhancedKeyRotationDaemon extends KeyRotationDaemon {
   constructor(options = {}) {

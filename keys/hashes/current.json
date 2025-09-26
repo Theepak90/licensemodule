@@ -1,0 +1,9 @@
+{
+  "hash": "e785c531104d0b658d7a75620260da4c9c41795b6643bd7c298050c9a43893e3874c65140eab3724167822dde9709c1e54faaa5dbf01851aeb396324fd147d0f",
+  "algorithm": "sha256",
+  "salt": "torro-hash-salt-2024",
+  "iterations": 10000,
+  "length": 64,
+  "createdAt": 1758870934363,
+  "version": "1.0.0"
+}

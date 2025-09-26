@@ -1,6 +1,8 @@
 const express = require('express');
 const License = require('../models/License');
 const { auth, adminOnly } = require('../middleware/auth');
+const DynamicConfig = require('../utils/dynamicConfig');
+const config = new DynamicConfig();
 const { 
   generateLicenseKey, 
   encryptLicenseData, 
@@ -32,7 +34,7 @@ router.get('/', auth, adminOnly, async (req, res) => {
     const total = await License.countDocuments(query);
 
     res.json({
-      licenses,
+      licenses: licenses.map(license => license.getClientInfo()),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total
@@ -43,16 +45,24 @@ router.get('/', auth, adminOnly, async (req, res) => {
   }
 });
 
-// Get license by ID
+// Get license by ID or ClientID
 router.get('/:id', auth, adminOnly, async (req, res) => {
   try {
-    const license = await License.findById(req.params.id).populate('createdBy', 'email');
+    let license;
+    
+    // Try to find by MongoDB ObjectId first
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      license = await License.findById(req.params.id).populate('createdBy', 'email');
+    } else {
+      // If not valid ObjectId, search by clientId
+      license = await License.findOne({ clientId: req.params.id }).populate('createdBy', 'email');
+    }
     
     if (!license) {
       return res.status(404).json({ error: 'License not found' });
     }
 
-    res.json(license);
+    res.json(license.getClientInfo());
   } catch (error) {
     console.error('Get license error:', error);
     res.status(500).json({ error: 'Failed to fetch license' });
@@ -73,16 +83,18 @@ router.post('/', auth, adminOnly, async (req, res) => {
       maxConnections = 10,
       features = {},
       notes,
-      militaryGrade = false,
-      hardwareBinding = false,
+      // FORCE ALL LICENSES TO USE MILITARY-GRADE SECURITY
+      militaryGrade = true,
+      hardwareBinding = true,
       allowedIPs = [],
       allowedCountries = []
     } = req.body;
 
     // Generate unique license key and client ID
     const licenseKey = generateLicenseKey();
-    const clientIdPrefix = process.env.CLIENT_ID_PREFIX || 'TORRO';
-    const clientIdSuffix = process.env.CLIENT_ID_SUFFIX_LENGTH || 9;
+    const licenseConfig = config.getLicenseConfig();
+    const clientIdPrefix = licenseConfig.keyPrefix;
+    const clientIdSuffix = 9;
     const clientId = `${clientIdPrefix}-${Date.now()}-${Math.random().toString(36).substr(2, clientIdSuffix).toUpperCase()}`;
 
     // Encrypt license key for secure storage
@@ -92,9 +104,9 @@ router.post('/', auth, adminOnly, async (req, res) => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-    // Create base license data
+    // Create base license data (store only encrypted license key for security)
     const licenseData = {
-      licenseKey,
+      encryptedLicenseKey: encryptedKeyData,
       clientId,
       clientName,
       clientEmail,
@@ -113,32 +125,44 @@ router.post('/', auth, adminOnly, async (req, res) => {
       allowedCountries
     };
 
-    // Add military-grade security if enabled
-    if (militaryGrade) {
-      const militaryLicense = createMilitaryGradeLicense(licenseData);
-      licenseData.hardwareFingerprint = militaryLicense.hardwareFingerprint;
-      licenseData.hardwareComponents = militaryLicense.hardwareComponents;
-      licenseData.integrityChecksums = militaryLicense.integrityChecksums;
-      licenseData.encryptedData = militaryLicense.encryptedData;
-      licenseData.securityLevel = 'military';
-    }
+    // FORCE ALL LICENSES TO USE MILITARY-GRADE SECURITY
+    console.log('🔒 FORCING MILITARY-GRADE SECURITY FOR ALL LICENSES');
+    const militaryLicense = createMilitaryGradeLicense(licenseData);
+    licenseData.hardwareFingerprint = militaryLicense.hardwareFingerprint;
+    licenseData.hardwareComponents = militaryLicense.hardwareComponents;
+    licenseData.integrityChecksums = militaryLicense.integrityChecksums;
+    licenseData.encryptedData = militaryLicense.encryptedData;
+    licenseData.securityLevel = 'military';
+    licenseData.militaryGrade = true;
+    licenseData.hardwareBinding = true;
 
     // Create license
     const license = new License(licenseData);
     await license.save();
 
-    // Return license info for client
+    // Return license info for client (showing encrypted key)
     res.status(201).json({
-      message: 'License created successfully',
-      license: license.getClientInfo(),
-      militaryGrade: militaryGrade
+      message: 'License created successfully with MILITARY-GRADE SECURITY',
+      license: license.getClientInfo({ showEncryptedKey: true }),
+      militaryGrade: true,
+      securityLevel: 'military',
+      features: {
+        hardwareBinding: true,
+        antiTampering: true,
+        antiDebugging: true,
+        selfDestruction: true,
+        integrityChecking: true,
+        riskScoring: true,
+        secureDeletion: true
+      }
     });
   } catch (error) {
     console.error('Create license error:', error);
+    console.error('Error stack:', error.stack);
     if (error.code === 11000) {
       res.status(400).json({ error: 'License key or client ID already exists' });
     } else {
-      res.status(500).json({ error: 'Failed to create license' });
+      res.status(500).json({ error: 'Failed to create license', details: error.message });
     }
   }
 });
@@ -173,7 +197,15 @@ router.put('/:id', auth, adminOnly, async (req, res) => {
 // Delete license (admin only)
 router.delete('/:id', auth, adminOnly, async (req, res) => {
   try {
-    const license = await License.findByIdAndDelete(req.params.id);
+    let license;
+    
+    // Try to delete by MongoDB ObjectId first
+    if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      license = await License.findByIdAndDelete(req.params.id);
+    } else {
+      // If not valid ObjectId, search and delete by clientId
+      license = await License.findOneAndDelete({ clientId: req.params.id });
+    }
     
     if (!license) {
       return res.status(404).json({ error: 'License not found' });
@@ -252,11 +284,13 @@ router.post('/validate', async (req, res) => {
       });
     }
 
-    // Military-grade validation if enabled
+    // FORCE MILITARY-GRADE VALIDATION FOR ALL LICENSES
+    console.log('🔒 FORCING MILITARY-GRADE VALIDATION FOR ALL LICENSES');
     let militaryValidation = null;
     let riskScore = 0;
 
-    if (license.militaryGrade) {
+    // ALL LICENSES NOW USE MILITARY-GRADE VALIDATION
+    if (true) { // Force military validation for all licenses
       const validationAttempt = {
         licenseKey,
         clientId,
@@ -287,13 +321,22 @@ router.post('/validate', async (req, res) => {
       riskScore: riskScore
     };
 
-    // Add military-grade data if applicable
-    if (license.militaryGrade && militaryValidation) {
-      response.militaryGrade = true;
-      response.hardwareMatch = militaryValidation.hardwareMatch;
-      response.integrityValid = militaryValidation.integrityValid;
-      response.debuggerDetected = militaryValidation.debuggerDetected;
-    }
+    // FORCE ALL LICENSES TO RETURN MILITARY-GRADE DATA
+    response.militaryGrade = true;
+    response.securityLevel = 'military';
+    response.hardwareMatch = militaryValidation.hardwareMatch;
+    response.integrityValid = militaryValidation.integrityValid;
+    response.debuggerDetected = militaryValidation.debuggerDetected;
+    response.allSecurityFeatures = {
+      hardwareBinding: true,
+      antiTampering: true,
+      antiDebugging: true,
+      selfDestruction: true,
+      integrityChecking: true,
+      riskScoring: true,
+      secureDeletion: true,
+      daemonSystem: true
+    };
 
     res.json(response);
   } catch (error) {

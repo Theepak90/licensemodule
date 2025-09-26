@@ -177,18 +177,32 @@ class HashValidator extends EventEmitter {
 
   async collectSystemInfo() {
     const os = require('os');
-    
+
+    const buildStableNetwork = (ifaces) => {
+      // Only include MAC addresses (stable), exclude IPs which change often
+      const macs = (ifaces || [])
+        .map(n => n.mac)
+        .filter(Boolean)
+        .sort();
+      return macs;
+    };
+
+    const buildStableDisks = (disks) => {
+      // Include type and size; sort to ensure deterministic order
+      return (disks || [])
+        .map(d => ({ type: d.type, size: d.size }))
+        .sort((a, b) => (a.type + a.size).localeCompare(b.type + b.size));
+    };
+
     try {
       if (!si) {
-        // Fallback to basic system info
+        // Minimal stable fallback (no volatile fields like uptime/timestamp)
         return {
           platform: os.platform(),
           arch: os.arch(),
           hostname: os.hostname(),
-          uptime: os.uptime(),
-          cpus: os.cpus().length,
-          memory: os.totalmem(),
-          timestamp: Date.now()
+          cpuCount: os.cpus().length,
+          memoryTotal: os.totalmem()
         };
       }
 
@@ -198,15 +212,14 @@ class HashValidator extends EventEmitter {
         si.networkInterfaces(),
         si.diskLayout()
       ]);
-      
+
       return {
-        // System information
+        // Stable system information (exclude uptime/timestamp)
         platform: os.platform(),
         arch: os.arch(),
         hostname: os.hostname(),
-        uptime: os.uptime(),
-        
-        // Hardware information
+
+        // Stable hardware information only
         cpu: {
           manufacturer: cpu.manufacturer,
           brand: cpu.brand,
@@ -214,37 +227,24 @@ class HashValidator extends EventEmitter {
           physicalCores: cpu.physicalCores
         },
         memory: {
-          total: mem.total,
-          free: mem.free
+          total: mem.total
         },
-        network: network.map(n => ({
-          mac: n.mac,
-          ip: n.ip4
-        })),
-        disk: disk.map(d => ({
-          type: d.type,
-          size: d.size
-        })),
-        
-        // Process information
-        process: {
-          pid: process.pid,
+        networkMacs: buildStableNetwork(network),
+        disks: buildStableDisks(disk),
+
+        // Stable process info (exclude pid)
+        node: {
           version: process.version,
           platform: process.platform
-        },
-        
-        // Timestamp
-        timestamp: Date.now()
+        }
       };
     } catch (error) {
       console.error('❌ Error collecting system info:', error.message);
-      // Fallback to basic system info
+      // Minimal stable fallback
       return {
         platform: os.platform(),
         arch: os.arch(),
-        hostname: os.hostname(),
-        uptime: os.uptime(),
-        timestamp: Date.now()
+        hostname: os.hostname()
       };
     }
   }
@@ -351,21 +351,22 @@ class HashValidator extends EventEmitter {
   generateSecurePassword() {
     const length = this.options.passwordLength;
     const complexity = this.options.passwordComplexity;
+    const charsets = this.options.passwordCharsets || {};
     
     let charset = '';
     
     switch (complexity) {
       case 'high':
-        charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+        charset = charsets.high || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
         break;
       case 'medium':
-        charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        charset = charsets.medium || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         break;
       case 'low':
-        charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        charset = charsets.low || 'abcdefghijklmnopqrstuvwxyz0123456789';
         break;
       default:
-        charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+        charset = charsets.high || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     }
     
     let password = '';

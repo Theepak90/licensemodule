@@ -1,19 +1,19 @@
-/**
- * Torro License Manager - Client Integration Example
- * 
- * This file demonstrates how to integrate license validation into your client application.
- * Copy and modify this code to suit your application's needs.
- */
-
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const DynamicConfig = require('../utils/dynamicConfig');
 
 class TorroLicenseValidator {
   constructor(licenseKey, clientId, options = {}) {
     this.licenseKey = licenseKey;
     this.clientId = clientId;
-    this.apiUrl = options.apiUrl || 'http://localhost:5000/api';
+    
+    // Use dynamic configuration for API URL
+    const config = new DynamicConfig();
+    const serverConfig = config.getServerConfig();
+    const defaultApiUrl = `http://${serverConfig.host}:${serverConfig.port}/api`;
+    
+    this.apiUrl = options.apiUrl || defaultApiUrl;
     this.checkInterval = options.checkInterval || 60; // minutes
     this.retryAttempts = options.retryAttempts || 3;
     this.retryDelay = options.retryDelay || 5000; // milliseconds
@@ -300,7 +300,7 @@ async function example() {
     'YOUR_LICENSE_KEY',
     'YOUR_CLIENT_ID',
     {
-      apiUrl: 'http://localhost:5000/api',
+      // apiUrl will use dynamic configuration if not specified
       checkInterval: 60, // minutes
       onValidationChange: (isValid, licenseData) => {
         console.log(`License status changed: ${isValid ? 'VALID' : 'INVALID'}`);

@@ -230,7 +230,7 @@ const LicenseList = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredLicenses.length > 0 ? (
                 filteredLicenses.map((license) => (
-                  <tr key={license._id} className="hover:bg-gray-50">
+                  <tr key={license.clientId} className="hover:bg-gray-50">
                     <td className="table-cell">
                       <div>
                         <div className="font-medium text-gray-900">
@@ -267,14 +267,14 @@ const LicenseList = () => {
                     <td className="table-cell">
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/licenses/${license._id}`}
+                          to={`/licenses/${license.clientId}`}
                           className="text-torro-600 hover:text-torro-700"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
                         <button
-                          onClick={() => handleDelete(license._id, license.clientName)}
+                          onClick={() => handleDelete(license.clientId, license.clientName)}
                           className="text-red-600 hover:text-red-700"
                           title="Delete License"
                         >

@@ -21,7 +21,8 @@ const generateLicenseKey = () => {
 // Encrypt license data (for client-side files)
 const encryptLicenseData = (data) => {
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(encryptionConfig.key, 'utf8');
+  // Ensure key is exactly 32 bytes for AES-256
+  const key = crypto.createHash('sha256').update(encryptionConfig.key).digest();
   const iv = crypto.randomBytes(16);
   
   const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -41,7 +42,8 @@ const encryptLicenseData = (data) => {
 // Encrypt license key for database storage
 const encryptLicenseKey = (licenseKey) => {
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(encryptionConfig.key, 'utf8');
+  // Ensure key is exactly 32 bytes for AES-256
+  const key = crypto.createHash('sha256').update(encryptionConfig.key).digest();
   const iv = crypto.randomBytes(16);
   
   const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -61,7 +63,8 @@ const encryptLicenseKey = (licenseKey) => {
 // Decrypt license data (for client-side files)
 const decryptLicenseData = (encryptedData, iv, authTag) => {
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(encryptionConfig.key, 'utf8');
+  // Ensure key is exactly 32 bytes for AES-256
+  const key = crypto.createHash('sha256').update(encryptionConfig.key).digest();
   
   const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(iv, 'hex'));
   decipher.setAAD(Buffer.from('torro-license', 'utf8'));
@@ -75,7 +78,8 @@ const decryptLicenseData = (encryptedData, iv, authTag) => {
 // Decrypt license key from database storage
 const decryptLicenseKey = (encryptedData, iv, authTag) => {
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(encryptionConfig.key, 'utf8');
+  // Ensure key is exactly 32 bytes for AES-256
+  const key = crypto.createHash('sha256').update(encryptionConfig.key).digest();
   
   const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(iv, 'hex'));
   decipher.setAAD(Buffer.from('torro-license-key', 'utf8'));

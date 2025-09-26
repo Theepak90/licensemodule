@@ -1,0 +1,9 @@
+{
+  "hash": "c47a6d28e447b95f9f16a20a70b0c67fd8ba00d8b8f325ebd7f9499b43540c91399bcc62174952fc6c18699d6afd19b4005f0bc367f358938709bacbeaad1b61",
+  "salt": "e02ed758c9417f73f98bb76bb5273109",
+  "algorithm": "sha256",
+  "iterations": 10000,
+  "length": 64,
+  "createdAt": 1758871474241,
+  "version": "1.0.0"
+}

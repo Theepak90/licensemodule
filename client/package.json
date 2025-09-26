@@ -19,7 +19,7 @@
     "postcss": "^8.4.24",
     "web-vitals": "^2.1.4"
   },
-  "proxy": "http://localhost:3001",
+  "proxy": "http://localhost:3005",
   "scripts": {
     "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true BROWSER=none react-scripts start",
     "build": "react-scripts build",
