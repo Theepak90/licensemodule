@@ -21,7 +21,7 @@
     "tailwindcss": "^3.3.0",
     "web-vitals": "^2.1.4"
   },
-  "proxy": "http://localhost:3004",
+  "proxy": "http://localhost:3005",
   "scripts": {
     "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true BROWSER=none PORT=3003 react-scripts start",
     "build": "react-scripts build",
