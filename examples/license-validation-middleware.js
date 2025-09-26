@@ -6,13 +6,19 @@
  */
 
 const axios = require('axios');
+const DynamicConfig = require('../utils/dynamicConfig');
 
 /**
  * License validation middleware factory
  */
 function createLicenseValidationMiddleware(options = {}) {
+  // Use dynamic configuration for default API URL
+  const config = new DynamicConfig();
+  const serverConfig = config.getServerConfig();
+  const defaultApiUrl = `http://${serverConfig.host}:${serverConfig.port}/api`;
+  
   const {
-    apiUrl = 'http://localhost:5000/api',
+    apiUrl = defaultApiUrl,
     licenseKeyHeader = 'x-license-key',
     clientIdHeader = 'x-client-id',
     timeout = 10000,
@@ -172,7 +178,7 @@ function createExampleApp() {
 
   // License validation middleware
   const licenseValidation = createLicenseValidationMiddleware({
-    apiUrl: 'http://localhost:5000/api',
+    // apiUrl will use dynamic configuration if not specified
     onValidationFailure: (req, res, next) => {
       res.status(403).json({
         error: 'License validation failed',
