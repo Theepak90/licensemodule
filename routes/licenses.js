@@ -35,7 +35,7 @@ router.get('/', auth, adminOnly, async (req, res) => {
     const total = await License.countDocuments(query);
 
     res.json({
-      licenses: licenses.map(license => license.getClientInfo()),
+      licenses: licenses.map(license => license.getClientInfo({ showEncryptedKey: true })),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total
@@ -63,7 +63,7 @@ router.get('/:id', auth, adminOnly, async (req, res) => {
       return res.status(404).json({ error: 'License not found' });
     }
 
-    res.json(license.getClientInfo());
+    res.json(license.getClientInfo({ showEncryptedKey: true }));
   } catch (error) {
     console.error('Get license error:', error);
     res.status(500).json({ error: 'Failed to fetch license' });
@@ -111,8 +111,9 @@ router.post('/', auth, adminOnly, async (req, res) => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-    // Create base license data (store only encrypted license key for security)
+    // Create base license data with military-grade license key
     const licenseData = {
+      licenseKey, // Store the military-grade license key
       encryptedLicenseKey: encryptedKeyData,
       clientId,
       clientName,
@@ -204,7 +205,7 @@ router.put('/:id', auth, adminOnly, async (req, res) => {
 
     res.json({
       message: 'License updated successfully',
-      license: license.getClientInfo()
+      license: license.getClientInfo({ showEncryptedKey: true })
     });
   } catch (error) {
     console.error('Update license error:', error);
@@ -335,7 +336,7 @@ router.post('/validate', async (req, res) => {
     // Prepare response
     const response = {
       valid: true,
-      license: license.getClientInfo(),
+      license: license.getClientInfo({ showEncryptedKey: true }),
       riskScore: riskScore
     };
 

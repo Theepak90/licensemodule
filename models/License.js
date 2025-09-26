@@ -1,7 +1,20 @@
 const mongoose = require('mongoose');
 
 const licenseSchema = new mongoose.Schema({
-  // licenseKey field removed - now using only encrypted storage
+  // Military-grade license key format
+  licenseKey: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+    validate: {
+      validator: function(v) {
+        // Validate military-grade license key format: TORRO-MIL-{timestamp}-{64-char-hex}-{8-char-checksum}
+        return /^TORRO-MIL-[a-z0-9]+-[A-F0-9]{64}-[A-F0-9]{8}$/.test(v);
+      },
+      message: 'Invalid military-grade license key format'
+    }
+  },
   // Encrypted license key storage
   encryptedLicenseKey: {
     encrypted: String,
@@ -206,6 +219,7 @@ licenseSchema.methods.getClientInfo = function(options = {}) {
   const { showEncryptedKey = false } = options;
   
   return {
+    _id: this._id, // MongoDB ObjectId for API calls
     licenseKey: showEncryptedKey ? this.getEncryptedLicenseKey() : this.getDecryptedLicenseKey(),
     clientId: this.clientId,
     clientName: this.clientName,
@@ -220,7 +234,11 @@ licenseSchema.methods.getClientInfo = function(options = {}) {
     maxConnections: this.maxConnections,
     features: Object.fromEntries(this.features),
     daysUntilExpiry: this.daysUntilExpiry,
-    isValid: this.isValid()
+    isValid: this.isValid(),
+    // ALL licenses have military-grade features
+    securityLevel: 'military',
+    militaryGrade: true,
+    hardwareBinding: true
   };
 };
 

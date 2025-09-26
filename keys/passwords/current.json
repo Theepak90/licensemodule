@@ -1,9 +1,9 @@
 {
-  "hash": "48e5ddfa1f450db53be8eade8b228a8159764cd13fcceefee5cc63b617f6926bfa6cf046e5aa0cd2226c4e6a7c652299a56325170ce25c2492baea19c0c98859",
-  "salt": "1259ffc36a765dbad1c2fd34668b97ea",
+  "hash": "f7c0f3ec45fb3ac3d1b470a5cc7dc06f881ba9fa0bac3bb720717b1db8f6cd092d02e05959c058b63f719e3033fb69ca60416c61a5e4c68c8846c593b2105672",
+  "salt": "6f900603fb8f2387aa38a24edfc2ea4c",
   "algorithm": "sha256",
   "iterations": 10000,
   "length": 64,
-  "createdAt": 1758872858528,
+  "createdAt": 1758879339351,
   "version": "1.0.0"
 }

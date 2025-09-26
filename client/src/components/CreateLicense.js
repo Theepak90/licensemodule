@@ -10,7 +10,8 @@ import {
   Save,
   ArrowLeft,
   Copy,
-  Check
+  Check,
+  Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -114,7 +115,7 @@ const CreateLicense = () => {
             <span>Back to Licenses</span>
           </button>
           <h1 className="text-3xl font-bold text-gray-900">License Created Successfully!</h1>
-          <p className="text-gray-600 mt-2">Your new license has been generated and is ready to use.</p>
+          <p className="text-gray-600 mt-2">Your new encrypted license has been generated and is ready to use.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -234,7 +235,7 @@ const CreateLicense = () => {
           <span>Back to Licenses</span>
         </button>
         <h1 className="text-3xl font-bold text-gray-900">Create New License</h1>
-        <p className="text-gray-600 mt-2">Generate a new license key for a client</p>
+        <p className="text-gray-600 mt-2">Generate a new encrypted license key for a client</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">

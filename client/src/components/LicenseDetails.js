@@ -461,7 +461,7 @@ const LicenseDetails = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {license.licenseKey.length} characters • Encrypted format
+                  {license.licenseKey.length} characters • Encrypted Format
                 </p>
               </div>
 

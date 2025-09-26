@@ -61,7 +61,7 @@ class MilitaryGradeSecurity {
       // Layer 1: AES-256-GCM encryption
       const layer1Key = crypto.randomBytes(32);
       const layer1Iv = crypto.randomBytes(16);
-      const layer1Cipher = crypto.createCipherGCM('aes-256-gcm', layer1Key, layer1Iv);
+      const layer1Cipher = crypto.createCipheriv('aes-256-gcm', layer1Key, layer1Iv);
       
       let encrypted1 = layer1Cipher.update(JSON.stringify(licenseData), 'utf8', 'hex');
       encrypted1 += layer1Cipher.final('hex');
@@ -70,7 +70,7 @@ class MilitaryGradeSecurity {
       // Layer 2: ChaCha20-Poly1305 encryption
       const layer2Key = crypto.randomBytes(32);
       const layer2Nonce = crypto.randomBytes(12);
-      const layer2Cipher = crypto.createCipherGCM('chacha20-poly1305', layer2Key, layer2Nonce);
+      const layer2Cipher = crypto.createCipheriv('chacha20-poly1305', layer2Key, layer2Nonce);
       
       let encrypted2 = layer2Cipher.update(encrypted1, 'hex', 'hex');
       encrypted2 += layer2Cipher.final('hex');

@@ -87,14 +87,15 @@ router.post('/', auth, adminOnly, async (req, res) => {
       productName = 'Torro Platform',
       version = '1.0.0',
       licenseType = 'trial',
-      securityLevel = 'basic',
+      // FORCE ALL LICENSES TO USE MILITARY-GRADE SECURITY
+      securityLevel = 'military',
       expiryDays = 30,
       maxUsers = 1,
       maxConnections = 10,
       features = {},
-      hardwareBinding = false,
-      selfDestruction = false,
-      networkValidation = false,
+      hardwareBinding = true,
+      selfDestruction = true,
+      networkValidation = true,
       allowedIPs = [],
       allowedCountries = [],
       notes
@@ -114,11 +115,8 @@ router.post('/', auth, adminOnly, async (req, res) => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-    // Generate hardware fingerprint if required
-    let hardwareFingerprint = null;
-    if (securityLevel === 'military' || hardwareBinding) {
-      hardwareFingerprint = security.generateHardwareFingerprint();
-    }
+    // ALWAYS generate hardware fingerprint for ALL licenses
+    const hardwareFingerprint = security.generateHardwareFingerprint();
 
     // Create license data for encryption
     const licenseData = {
@@ -136,11 +134,8 @@ router.post('/', auth, adminOnly, async (req, res) => {
       securityLevel
     };
 
-    // Encrypt license data if military-grade
-    let encryptedData = null;
-    if (securityLevel === 'military') {
-      encryptedData = security.encryptLicenseData(licenseData, hardwareFingerprint);
-    }
+    // ALWAYS encrypt license data for ALL licenses
+    const encryptedData = security.encryptLicenseData(licenseData, hardwareFingerprint);
 
     // Check for existing license with same client ID (extra safety)
     const existingLicense = await SecureLicense.findOne({ clientId });
@@ -274,31 +269,29 @@ router.post('/validate', validationLimiter, async (req, res) => {
       });
     }
 
-    // Hardware fingerprint validation for military-grade licenses
-    if (license.securityLevel === 'military') {
-      if (!hardwareFingerprint) {
-        return res.status(400).json({
-          error: 'Hardware fingerprint required',
-          valid: false,
-          code: 'HARDWARE_FINGERPRINT_REQUIRED'
-        });
-      }
+    // Hardware fingerprint validation for ALL licenses
+    if (!hardwareFingerprint) {
+      return res.status(400).json({
+        error: 'Hardware fingerprint required',
+        valid: false,
+        code: 'HARDWARE_FINGERPRINT_REQUIRED'
+      });
+    }
 
-      if (!license.validateHardwareFingerprint(hardwareFingerprint)) {
-        license.addValidationRecord({
-          success: false,
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-          securityViolations: ['hardware_mismatch']
-        });
-        await license.save();
+    if (!license.validateHardwareFingerprint(hardwareFingerprint)) {
+      license.addValidationRecord({
+        success: false,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        securityViolations: ['hardware_mismatch']
+      });
+      await license.save();
 
-        return res.status(403).json({
-          error: 'Hardware fingerprint mismatch',
-          valid: false,
-          code: 'HARDWARE_MISMATCH'
-        });
-      }
+      return res.status(403).json({
+        error: 'Hardware fingerprint mismatch',
+        valid: false,
+        code: 'HARDWARE_MISMATCH'
+      });
     }
 
     // Network validation

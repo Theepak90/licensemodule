@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -28,10 +29,31 @@ const cronConfig = config.getCronConfig();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: serverConfig.corsOrigin,
-  credentials: serverConfig.corsCredentials,
-  methods: serverConfig.corsMethods,
-  allowedHeaders: serverConfig.corsHeaders
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Hardcoded allowed origins to ensure frontend works
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3002', 
+      'http://localhost:3003',
+      'http://localhost:3004'
+    ];
+    
+    console.log('CORS: Request origin:', origin);
+    console.log('CORS: Allowed origins:', allowedOrigins);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS: Blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting
@@ -105,9 +127,9 @@ app.use((err, req, res, next) => {
 let daemonManager = null;
 
 app.listen(serverConfig.port, serverConfig.host, async () => {
-  console.log(`🚀 Torro License Manager running on ${serverConfig.host}:${serverConfig.port}`);
-  console.log(`📊 Dashboard: http://${serverConfig.host}:${serverConfig.port}`);
-  console.log(`🔗 API: http://${serverConfig.host}:${serverConfig.port}/api`);
+  console.log(`🚀 Torro License Manager API Server running on ${serverConfig.host}:${serverConfig.port}`);
+  console.log(`📊 Frontend Dashboard: http://localhost:3003`);
+  console.log(`🔗 API Endpoint: http://${serverConfig.host}:${serverConfig.port}/api`);
   console.log(`🌍 Environment: ${serverConfig.nodeEnv}`);
   
   // FORCE START DAEMON SYSTEM

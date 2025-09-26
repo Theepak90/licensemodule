@@ -141,20 +141,18 @@ const secureLicenseSchema = new mongoose.Schema({
     ])
   },
 
-  // Military-Grade Security Fields
+  // Military-Grade Security Fields (ALL licenses use military-grade)
   securityLevel: {
     type: String,
     enum: ['basic', 'standard', 'premium', 'military'],
-    default: 'basic'
+    default: 'military'
   },
 
   // Hardware Fingerprinting
   hardwareFingerprint: {
     primary: {
       type: String,
-      required: function() {
-        return this.securityLevel === 'military';
-      },
+      required: true, // ALL licenses require hardware fingerprinting
       validate: {
         validator: function(v) {
           return v && v.length === 128; // SHA-512 length
@@ -451,8 +449,7 @@ secureLicenseSchema.methods.isValid = function() {
 };
 
 secureLicenseSchema.methods.validateHardwareFingerprint = function(fingerprint) {
-  if (this.securityLevel !== 'military') return true;
-  
+  // ALL licenses require hardware fingerprint validation
   return this.hardwareFingerprint.primary === fingerprint.primary;
 };
 
@@ -548,9 +545,9 @@ secureLicenseSchema.pre('save', function(next) {
 
 // Pre-validate middleware
 secureLicenseSchema.pre('validate', function(next) {
-  // Ensure military-grade licenses have hardware fingerprinting
-  if (this.securityLevel === 'military' && !this.hardwareFingerprint.primary) {
-    return next(new Error('Military-grade licenses require hardware fingerprinting'));
+  // ALL licenses require hardware fingerprinting
+  if (!this.hardwareFingerprint.primary) {
+    return next(new Error('All licenses require hardware fingerprinting'));
   }
   
   next();

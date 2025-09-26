@@ -267,14 +267,14 @@ const LicenseList = () => {
                     <td className="table-cell">
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/licenses/${license.clientId}`}
+                          to={`/licenses/${license._id}`}
                           className="text-torro-600 hover:text-torro-700"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
                         <button
-                          onClick={() => handleDelete(license.clientId, license.clientName)}
+                          onClick={() => handleDelete(license._id, license.clientName)}
                           className="text-red-600 hover:text-red-700"
                           title="Delete License"
                         >

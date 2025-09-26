@@ -9,13 +9,13 @@ const config = new DynamicConfig();
 const encryptionConfig = config.getEncryptionConfig();
 const licenseConfig = config.getLicenseConfig();
 
-// Generate a unique license key
+// Generate a unique license key with military-grade format
 const generateLicenseKey = () => {
   const timestamp = Date.now().toString(36);
-  const randomPart = crypto.randomBytes(licenseConfig.randomLength).toString('hex').toUpperCase();
-  const checksum = crypto.createHash('md5').update(timestamp + randomPart).digest('hex').substring(0, licenseConfig.checksumLength).toUpperCase();
+  const randomPart = crypto.randomBytes(32).toString('hex').toUpperCase(); // 64 characters
+  const checksum = crypto.createHash('sha256').update(timestamp + randomPart).digest('hex').substring(0, 8).toUpperCase();
   
-  return `${licenseConfig.keyPrefix}-${timestamp}-${randomPart}-${checksum}`;
+  return `TORRO-MIL-${timestamp}-${randomPart}-${checksum}`;
 };
 
 // Encrypt license data (for client-side files)
