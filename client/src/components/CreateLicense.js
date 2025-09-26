@@ -138,16 +138,8 @@ const CreateLicense = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {createdLicense.licenseKey.length} characters • MILITARY-GRADE 3-level encrypted format
+                  {createdLicense.licenseKey.length} characters
                 </p>
-                <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
-                  <p className="text-xs text-red-800 font-semibold">
-                    🔒 MILITARY-GRADE SECURITY ENABLED
-                  </p>
-                  <p className="text-xs text-red-700">
-                    Hardware Binding • Anti-Tampering • Self-Destruction • Daemon System
-                  </p>
-                </div>
               </div>
 
               <div>

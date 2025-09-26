@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// Configure axios defaults - NEW BACKEND PORT 3005
+// Configure axios defaults - NEW BACKEND PORT 3004
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? window.location.origin 
-  : 'http://localhost:3005';
+  : 'http://localhost:3004';
 
 // Create axios instance with base configuration
 const api = axios.create({
