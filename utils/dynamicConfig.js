@@ -115,13 +115,11 @@ class DynamicConfig {
       clientIdSuffixLength: parseInt(process.env.CLIENT_ID_SUFFIX_LENGTH) || 9
     };
 
-    // Network Security Configuration
+    // Network Security Configuration - Rate limiting removed
     this.config.networkSecurity = {
       allowedCountries: process.env.ALLOWED_COUNTRIES ? process.env.ALLOWED_COUNTRIES.split(',') : ['US', 'CA', 'GB', 'DE', 'FR'],
-      maxRequestsPerHour: parseInt(process.env.MAX_REQUESTS_PER_HOUR) || 1000,
-      rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 3600000,
-      rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-      rateLimitMessage: process.env.RATE_LIMIT_MESSAGE || 'Too many requests from this IP, please try again later.'
+      maxRequestsPerHour: parseInt(process.env.MAX_REQUESTS_PER_HOUR) || 1000
+      // Rate limiting removed - no API limits
     };
 
     // Risk Scoring Configuration

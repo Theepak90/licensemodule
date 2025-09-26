@@ -48,8 +48,7 @@ class ConfigValidator {
       LICENSE_RANDOM_LENGTH: { type: 'number', min: 8, max: 64 },
       LICENSE_CHECKSUM_LENGTH: { type: 'number', min: 4, max: 32 },
       CLIENT_ID_SUFFIX_LENGTH: { type: 'number', min: 4, max: 20 },
-      RATE_LIMIT_WINDOW_MS: { type: 'number', min: 60000, max: 3600000 },
-      RATE_LIMIT_MAX_REQUESTS: { type: 'number', min: 1, max: 10000 },
+      // Rate limiting removed - no API limits
       JSON_LIMIT: { type: 'string', pattern: /^\d+(mb|kb|gb)$/i },
       LOG_RETENTION_DAYS: { type: 'number', min: 1, max: 365 },
       TORRO_GRACE_PERIOD: { type: 'number', min: 60000, max: 3600000 },

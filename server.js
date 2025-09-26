@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+// Rate limiting removed - no API limits
 const cron = require('node-cron');
 const DynamicConfig = require('./utils/dynamicConfig');
 
@@ -56,13 +56,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: networkConfig.rateLimitWindowMs,
-  max: networkConfig.rateLimitMaxRequests,
-  message: networkConfig.rateLimitMessage
-});
-app.use('/api/', limiter);
+// Rate limiting removed - no API limits
 
 // Body parsing middleware
 app.use(express.json({ limit: serverConfig.jsonLimit }));
