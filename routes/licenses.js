@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const License = require('../models/License');
 const { auth, adminOnly } = require('../middleware/auth');
 const DynamicConfig = require('../utils/dynamicConfig');
@@ -94,8 +95,14 @@ router.post('/', auth, adminOnly, async (req, res) => {
     const licenseKey = generateLicenseKey();
     const licenseConfig = config.getLicenseConfig();
     const clientIdPrefix = licenseConfig.keyPrefix;
-    const clientIdSuffix = 9;
-    const clientId = `${clientIdPrefix}-${Date.now()}-${Math.random().toString(36).substr(2, clientIdSuffix).toUpperCase()}`;
+    const clientIdSuffix = licenseConfig.clientIdSuffixLength || 9;
+    
+    // Generate truly unique client ID with multiple entropy sources
+    const timestamp = Date.now();
+    const randomPart1 = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const randomPart2 = Math.random().toString(36).substr(2, clientIdSuffix).toUpperCase();
+    const processId = process.pid.toString(36).toUpperCase();
+    const clientId = `${clientIdPrefix}-${timestamp}-${randomPart1}-${randomPart2}-${processId}`;
 
     // Encrypt license key for secure storage
     const encryptedKeyData = encryptLicenseKey(licenseKey);
@@ -135,6 +142,17 @@ router.post('/', auth, adminOnly, async (req, res) => {
     licenseData.securityLevel = 'military';
     licenseData.militaryGrade = true;
     licenseData.hardwareBinding = true;
+
+    // Check for existing license with same client ID (extra safety)
+    const existingLicense = await License.findOne({ clientId });
+    if (existingLicense) {
+      // Regenerate client ID if collision detected
+      const newTimestamp = Date.now() + Math.floor(Math.random() * 1000);
+      const newRandomPart1 = crypto.randomBytes(4).toString('hex').toUpperCase();
+      const newRandomPart2 = Math.random().toString(36).substr(2, clientIdSuffix).toUpperCase();
+      const newProcessId = process.pid.toString(36).toUpperCase();
+      licenseData.clientId = `${clientIdPrefix}-${newTimestamp}-${newRandomPart1}-${newRandomPart2}-${newProcessId}`;
+    }
 
     // Create license
     const license = new License(licenseData);

@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const SecureLicense = require('../models/SecureLicense');
 const MilitaryGradeSecurity = require('../services/militaryGradeSecurity');
 const { auth, adminOnly } = require('../middleware/auth');
@@ -101,7 +102,13 @@ router.post('/', auth, adminOnly, async (req, res) => {
 
     // Generate military-grade license key
     const licenseKey = security.generateSecureLicenseKey();
-    const clientId = `TORRO-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
+    // Generate truly unique client ID with multiple entropy sources
+    const timestamp = Date.now();
+    const randomPart1 = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const randomPart2 = Math.random().toString(36).substr(2, 9).toUpperCase();
+    const processId = process.pid.toString(36).toUpperCase();
+    const clientId = `TORRO-${timestamp}-${randomPart1}-${randomPart2}-${processId}`;
 
     // Calculate expiry date
     const expiryDate = new Date();
@@ -133,6 +140,17 @@ router.post('/', auth, adminOnly, async (req, res) => {
     let encryptedData = null;
     if (securityLevel === 'military') {
       encryptedData = security.encryptLicenseData(licenseData, hardwareFingerprint);
+    }
+
+    // Check for existing license with same client ID (extra safety)
+    const existingLicense = await SecureLicense.findOne({ clientId });
+    if (existingLicense) {
+      // Regenerate client ID if collision detected
+      const newTimestamp = Date.now() + Math.floor(Math.random() * 1000);
+      const newRandomPart1 = crypto.randomBytes(4).toString('hex').toUpperCase();
+      const newRandomPart2 = Math.random().toString(36).substr(2, 9).toUpperCase();
+      const newProcessId = process.pid.toString(36).toUpperCase();
+      clientId = `TORRO-${newTimestamp}-${newRandomPart1}-${newRandomPart2}-${newProcessId}`;
     }
 
     // Create secure license
