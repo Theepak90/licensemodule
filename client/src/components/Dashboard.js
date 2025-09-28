@@ -145,14 +145,14 @@ const Dashboard = () => {
           <div className="divide-y divide-gray-200">
             {recentLicenses.length > 0 ? (
               recentLicenses.map((license) => (
-                <div key={license._id} className="px-6 py-4">
+                <div key={license.id} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {license.clientName}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {license.licenseKey.substring(0, 20)}...
+                        {license.licenseKey ? license.licenseKey.substring(0, 20) + '...' : 'N/A'}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">

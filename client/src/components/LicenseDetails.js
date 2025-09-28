@@ -180,18 +180,7 @@ const LicenseDetails = () => {
       const newExpiry = new Date(currentExpiry.getTime() + (extendData.days * 24 * 60 * 60 * 1000));
       
       await updateLicense(id, { 
-        ...formData, 
-        expiryDate: newExpiry.toISOString(),
-        extensionHistory: [
-          ...(license.extensionHistory || []),
-          {
-            days: extendData.days,
-            reason: extendData.reason,
-            extendedAt: new Date().toISOString(),
-            previousExpiry: currentExpiry.toISOString(),
-            newExpiry: newExpiry.toISOString()
-          }
-        ]
+        expiryDate: newExpiry.toISOString()
       });
       
       setExtendData({ days: 30, reason: '' });
@@ -449,11 +438,11 @@ const LicenseDetails = () => {
                 <div className="flex items-start space-x-2">
                   <div className="flex-1 bg-gray-100 p-3 rounded-lg font-mono text-xs overflow-x-auto max-w-full">
                     <code className="whitespace-nowrap select-all">
-                      {license.licenseKey}
+                      {license.licenseKey || 'N/A'}
                     </code>
                   </div>
                   <button
-                    onClick={() => copyToClipboard(license.licenseKey)}
+                    onClick={() => copyToClipboard(license.licenseKey || '')}
                     className="p-2 text-gray-600 hover:text-gray-900 flex-shrink-0"
                     title="Copy license key"
                   >
@@ -461,7 +450,7 @@ const LicenseDetails = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {license.licenseKey.length} characters • Encrypted Format
+                  {license.licenseKey ? license.licenseKey.length : 0} characters • Encrypted Format
                 </p>
               </div>
 
@@ -825,7 +814,7 @@ const LicenseDetails = () => {
             <div className="space-y-3">
               <button
                 onClick={() => copyToClipboard(JSON.stringify({
-                  licenseKey: license.licenseKey,
+                  licenseKey: license.licenseKey || '',
                   clientId: license.clientId
                 }, null, 2))}
                 className="w-full btn-secondary flex items-center justify-center space-x-2"
@@ -835,7 +824,7 @@ const LicenseDetails = () => {
               </button>
               
               <button
-                onClick={() => copyToClipboard(`POST /api/licenses/validate\n\n{\n  "licenseKey": "${license.licenseKey}",\n  "clientId": "${license.clientId}"\n}`)}
+                onClick={() => copyToClipboard(`POST /api/licenses/validate\n\n{\n  "licenseKey": "${license.licenseKey || ''}",\n  "clientId": "${license.clientId}"\n}`)}
                 className="w-full btn-secondary flex items-center justify-center space-x-2"
               >
                 <Copy className="h-4 w-4" />

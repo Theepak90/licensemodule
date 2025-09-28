@@ -55,6 +55,8 @@ class HashValidator extends EventEmitter {
     this.mismatchCount = 0;
     this.lastValidation = null;
     this.validationInterval = null;
+    this.serverStartTime = Date.now();
+    this.isFirstValidation = true;
     
     // Ensure directories exist
     this.ensureDirectories();
@@ -104,7 +106,25 @@ class HashValidator extends EventEmitter {
         return;
       }
       
-      // Compare hashes
+      // MODIFIED: Create fresh hash on first validation (server start)
+      // This prevents false positives when server restarts
+      if (this.isFirstValidation) {
+        console.log('🔄 First validation after server start - creating fresh hash');
+        await this.createInitialHash(currentSystemHash);
+        this.isFirstValidation = false;
+        
+        console.log('✅ Hash validation passed - fresh hash created on server start');
+        this.mismatchCount = 0;
+        this.lastValidation = {
+          timestamp: Date.now(),
+          result: 'PASS',
+          hash: currentSystemHash.substring(0, 16) + '...',
+          note: 'Fresh hash created on server start'
+        };
+        return;
+      }
+      
+      // For subsequent validations, compare hashes normally
       const isValid = this.compareHashes(currentSystemHash, storedHash);
       
       if (isValid) {

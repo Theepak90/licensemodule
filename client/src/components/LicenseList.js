@@ -57,7 +57,7 @@ const LicenseList = () => {
   const filteredLicenses = licenses.filter(license => {
     const matchesSearch = 
       license.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      license.licenseKey.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (license.licenseKey && license.licenseKey.toLowerCase().includes(searchTerm.toLowerCase())) ||
       license.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
@@ -243,7 +243,7 @@ const LicenseList = () => {
                     </td>
                     <td className="table-cell">
                       <div className="font-mono text-sm">
-                        {license.licenseKey.substring(0, 20)}...
+                        {license.licenseKey ? license.licenseKey.substring(0, 20) + '...' : 'N/A'}
                       </div>
                     </td>
                     <td className="table-cell">
@@ -267,14 +267,14 @@ const LicenseList = () => {
                     <td className="table-cell">
                       <div className="flex items-center space-x-2">
                         <Link
-                          to={`/licenses/${license._id}`}
+                          to={`/licenses/${license.id}`}
                           className="text-torro-600 hover:text-torro-700"
                           title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
                         <button
-                          onClick={() => handleDelete(license._id, license.clientName)}
+                          onClick={() => handleDelete(license.id, license.clientName)}
                           className="text-red-600 hover:text-red-700"
                           title="Delete License"
                         >

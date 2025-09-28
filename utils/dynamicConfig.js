@@ -31,12 +31,12 @@ class DynamicConfig {
   }
 
   setDefaults() {
-    // Server Configuration - NEW PORTS: Backend 3005, Frontend 3004
+    // Server Configuration - NEW PORTS: Backend 3010, Frontend 3009
     this.config.server = {
-      port: parseInt(process.env.PORT) || 3005,
+      port: parseInt(process.env.PORT) || 3010,
       host: process.env.HOST || 'localhost',
       nodeEnv: process.env.NODE_ENV || 'development',
-      corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3004'],
+      corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3009'],
       corsCredentials: process.env.CORS_CREDENTIALS === 'true',
       corsMethods: process.env.CORS_METHODS ? process.env.CORS_METHODS.split(',') : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       corsHeaders: process.env.CORS_HEADERS ? process.env.CORS_HEADERS.split(',') : ['Content-Type', 'Authorization', 'X-Requested-With'],
